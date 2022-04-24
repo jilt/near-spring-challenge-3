@@ -1,0 +1,40 @@
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "appStore", ()=>appStore
+);
+parcelHelpers.export(exports, "AppProvider", ()=>AppProvider
+);
+parcelHelpers.export(exports, "onAppMount", ()=>onAppMount
+);
+parcelHelpers.export(exports, "snackAttack", ()=>snackAttack
+);
+var _state = require("../utils/state");
+var _near = require("./near");
+const initialState = {
+    app: {
+        mounted: false,
+        tab: 1,
+        sort: 2,
+        filter: 1
+    },
+    near: {
+        initialized: false
+    }
+};
+let snackTimeout;
+const { appStore , AppProvider  } = _state.State(initialState, 'app');
+const onAppMount = ()=>async ({ update , getState , dispatch  })=>{
+        update('app', {
+            mounted: true
+        });
+        dispatch(_near.initNear());
+    }
+;
+const snackAttack = (msg)=>async ({ update , getState , dispatch  })=>{
+        console.log('Snacking on:', msg);
+        update('app.snack', msg);
+        if (snackTimeout) clearTimeout(snackTimeout);
+        snackTimeout = setTimeout(()=>update('app.snack', null)
+        , 3000);
+    }
+;

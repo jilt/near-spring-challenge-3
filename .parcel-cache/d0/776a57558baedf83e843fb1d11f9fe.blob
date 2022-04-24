@@ -1,0 +1,189 @@
+var helpers = require("../../node_modules/@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js");
+var prevRefreshReg = window.$RefreshReg$;
+var prevRefreshSig = window.$RefreshSig$;
+helpers.prelude(module);
+
+try {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "Contract", ()=>Contract
+);
+var _react = require("react");
+var _reactDefault = parcelHelpers.interopDefault(_react);
+var _nearApiJs = require("near-api-js");
+var _near = require("../state/near");
+var _nearUtils = require("../utils/near-utils");
+var _s = $RefreshSig$();
+const { KeyPair ,  } = _nearApiJs;
+const Contract = ({ near , update , account  })=>{
+    _s();
+    if (!account) return(/*#__PURE__*/ _reactDefault.default.createElement("p", {
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Contract.js",
+            lineNumber: 15
+        },
+        __self: undefined
+    }, "Please connect your NEAR Wallet"));
+    const [media, setMedia] = _react.useState('');
+    const [validMedia, setValidMedia] = _react.useState('');
+    const [royalties, setRoyalties] = _react.useState({
+    });
+    const [royalty, setRoyalty] = _react.useState([]);
+    const [receiver, setReceiver] = _react.useState([]);
+    const handleMint = async ()=>{
+        if (!media.length || !validMedia) {
+            alert('Please enter a valid Image Link. You should see a preview below!');
+            return;
+        }
+        // shape royalties data for minting and check max is < 20%
+        let perpetual_royalties = Object.entries(royalties).map(([receiver1, royalty1])=>({
+                [receiver1]: royalty1 * 100
+            })
+        ).reduce((acc, cur)=>Object.assign(acc, cur)
+        , {
+        });
+        if (Object.values(perpetual_royalties).reduce((a, c)=>a + c
+        , 0) > 3000) return alert('Cannot add more than 30% in perpetual NFT royalties when minting');
+        update('loading', true);
+        const metadata = {
+            media,
+            issued_at: Date.now().toString()
+        };
+        const deposit = _near.parseNearAmount('0.1');
+        await account.functionCall(_nearUtils.contractId, 'nft_mint', {
+            token_id: 'token-' + Date.now(),
+            metadata,
+            perpetual_royalties
+        }, _near.GAS, deposit);
+        update('loading', false);
+        setMetadata('');
+    };
+    return(/*#__PURE__*/ _reactDefault.default.createElement(_reactDefault.default.Fragment, null, /*#__PURE__*/ _reactDefault.default.createElement("h4", {
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Contract.js",
+            lineNumber: 53
+        },
+        __self: undefined
+    }, "Mint Something"), /*#__PURE__*/ _reactDefault.default.createElement("input", {
+        className: "full-width",
+        placeholder: "Image Link",
+        value: media,
+        onChange: (e)=>setMedia(e.target.value)
+        ,
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Contract.js",
+            lineNumber: 54
+        },
+        __self: undefined
+    }), /*#__PURE__*/ _reactDefault.default.createElement("img", {
+        src: media,
+        onLoad: ()=>setValidMedia(true)
+        ,
+        onError: ()=>setValidMedia(false)
+        ,
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Contract.js",
+            lineNumber: 55
+        },
+        __self: undefined
+    }), !validMedia && /*#__PURE__*/ _reactDefault.default.createElement("p", {
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Contract.js",
+            lineNumber: 57
+        },
+        __self: undefined
+    }, "Image link is invalid."), /*#__PURE__*/ _reactDefault.default.createElement("h4", {
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Contract.js",
+            lineNumber: 59
+        },
+        __self: undefined
+    }, "Royalties"), Object.keys(royalties).length > 0 ? Object.entries(royalties).map(([receiver1, royalty1])=>/*#__PURE__*/ _reactDefault.default.createElement("div", {
+            key: receiver1,
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Contract.js",
+                lineNumber: 62
+            },
+            __self: undefined
+        }, receiver1, " - ", royalty1, " % ", /*#__PURE__*/ _reactDefault.default.createElement("button", {
+            onClick: ()=>{
+                delete royalties[receiver1];
+                setRoyalties(Object.assign({
+                }, royalties));
+            },
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Contract.js",
+                lineNumber: 63
+            },
+            __self: undefined
+        }, "\u274c"))
+    ) : /*#__PURE__*/ _reactDefault.default.createElement("p", {
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Contract.js",
+            lineNumber: 69
+        },
+        __self: undefined
+    }, "No royalties added yet."), /*#__PURE__*/ _reactDefault.default.createElement("input", {
+        className: "full-width",
+        placeholder: "Account ID",
+        value: receiver,
+        onChange: (e)=>setReceiver(e.target.value)
+        ,
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Contract.js",
+            lineNumber: 71
+        },
+        __self: undefined
+    }), /*#__PURE__*/ _reactDefault.default.createElement("input", {
+        type: "number",
+        className: "full-width",
+        placeholder: "Percentage",
+        value: royalty,
+        onChange: (e)=>setRoyalty(e.target.value)
+        ,
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Contract.js",
+            lineNumber: 72
+        },
+        __self: undefined
+    }), /*#__PURE__*/ _reactDefault.default.createElement("button", {
+        onClick: async ()=>{
+            const exists = await _nearUtils.isAccountTaken(receiver);
+            if (!exists) return alert(`Account: ${receiver} does not exist on ${_nearUtils.networkId === 'default' ? 'testnet' : 'mainnet'}.`);
+            setRoyalties(Object.assign({
+            }, royalties, {
+                [receiver]: royalty
+            }));
+        },
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Contract.js",
+            lineNumber: 73
+        },
+        __self: undefined
+    }, "Add Royalty"), /*#__PURE__*/ _reactDefault.default.createElement("div", {
+        className: "line",
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Contract.js",
+            lineNumber: 81
+        },
+        __self: undefined
+    }), /*#__PURE__*/ _reactDefault.default.createElement("button", {
+        onClick: ()=>handleMint()
+        ,
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Contract.js",
+            lineNumber: 83
+        },
+        __self: undefined
+    }, "Mint")));
+};
+_s(Contract, "UJrIXj+1+yfIU8jcrD+1wQx33qA=");
+_c = Contract;
+var _c;
+$RefreshReg$(_c, "Contract");
+
+  helpers.postlude(module);
+} finally {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}

@@ -1,0 +1,211 @@
+var helpers = require("../node_modules/@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js");
+var prevRefreshReg = window.$RefreshReg$;
+var prevRefreshSig = window.$RefreshSig$;
+helpers.prelude(module);
+
+try {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+var _react = require("react");
+var _reactDefault = parcelHelpers.interopDefault(_react);
+var _app = require("./state/app");
+var _wallet = require("./components/Wallet");
+var _contract = require("./components/Contract");
+var _gallery = require("./components/Gallery");
+var _avatarJpg = require("url:./img/avatar.jpg");
+var _avatarJpgDefault = parcelHelpers.interopDefault(_avatarJpg);
+var _nearIconSvg = require("url:./img/near_icon.svg");
+var _nearIconSvgDefault = parcelHelpers.interopDefault(_nearIconSvg);
+var _appScss = require("./App.scss");
+var _s = $RefreshSig$();
+const App = ()=>{
+    _s();
+    const { state , dispatch , update  } = _react.useContext(_app.appStore);
+    const { app , app: { tab , snack  } , near , wallet , contractAccount , account , loading  } = state;
+    const [profile, setProfile] = _react.useState(false);
+    const onMount = ()=>{
+        dispatch(_app.onAppMount());
+    };
+    _react.useEffect(onMount, []);
+    const signedIn = wallet && wallet.signedIn;
+    if (profile && !signedIn) setProfile(false);
+    return(/*#__PURE__*/ _reactDefault.default.createElement(_reactDefault.default.Fragment, null, loading && /*#__PURE__*/ _reactDefault.default.createElement("div", {
+        className: "loading",
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\App.js",
+            lineNumber: 34
+        },
+        __self: undefined
+    }, /*#__PURE__*/ _reactDefault.default.createElement("img", {
+        src: _nearIconSvgDefault.default,
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\App.js",
+            lineNumber: 35
+        },
+        __self: undefined
+    })), snack && /*#__PURE__*/ _reactDefault.default.createElement("div", {
+        className: "snack",
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\App.js",
+            lineNumber: 40
+        },
+        __self: undefined
+    }, snack), /*#__PURE__*/ _reactDefault.default.createElement("div", {
+        className: "background",
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\App.js",
+            lineNumber: 45
+        },
+        __self: undefined
+    }), /*#__PURE__*/ _reactDefault.default.createElement("div", {
+        id: "menu",
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\App.js",
+            lineNumber: 47
+        },
+        __self: undefined
+    }, /*#__PURE__*/ _reactDefault.default.createElement("div", {
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\App.js",
+            lineNumber: 48
+        },
+        __self: undefined
+    }, /*#__PURE__*/ _reactDefault.default.createElement("img", {
+        style: {
+            opacity: signedIn ? 1 : 0.25
+        },
+        src: _avatarJpgDefault.default,
+        onClick: ()=>setProfile(!profile)
+        ,
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\App.js",
+            lineNumber: 49
+        },
+        __self: undefined
+    })), /*#__PURE__*/ _reactDefault.default.createElement("div", {
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\App.js",
+            lineNumber: 53
+        },
+        __self: undefined
+    }, !signedIn ? /*#__PURE__*/ _reactDefault.default.createElement(_wallet.Wallet, {
+        wallet,
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\App.js",
+            lineNumber: 54
+        },
+        __self: undefined
+    }) : account.accountId), profile && signedIn && /*#__PURE__*/ _reactDefault.default.createElement("div", {
+        id: "profile",
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\App.js",
+            lineNumber: 57
+        },
+        __self: undefined
+    }, /*#__PURE__*/ _reactDefault.default.createElement("div", {
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\App.js",
+            lineNumber: 58
+        },
+        __self: undefined
+    }, wallet && wallet.signedIn && /*#__PURE__*/ _reactDefault.default.createElement(_wallet.Wallet, {
+        wallet,
+        account,
+        update,
+        dispatch,
+        handleClose: ()=>setProfile(false)
+        ,
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\App.js",
+            lineNumber: 60
+        },
+        __self: undefined
+    })))), signedIn && /*#__PURE__*/ _reactDefault.default.createElement("div", {
+        id: "tabs",
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\App.js",
+            lineNumber: 69
+        },
+        __self: undefined
+    }, /*#__PURE__*/ _reactDefault.default.createElement("div", {
+        onClick: ()=>update('app.tab', 1)
+        ,
+        style: {
+            background: tab === 1 ? '#fed' : ''
+        },
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\App.js",
+            lineNumber: 70
+        },
+        __self: undefined
+    }, "Market"), /*#__PURE__*/ _reactDefault.default.createElement("div", {
+        onClick: ()=>update('app.tab', 2)
+        ,
+        style: {
+            background: tab === 2 ? '#fed' : ''
+        },
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\App.js",
+            lineNumber: 71
+        },
+        __self: undefined
+    }, "My NFTs"), /*#__PURE__*/ _reactDefault.default.createElement("div", {
+        onClick: ()=>update('app.tab', 3)
+        ,
+        style: {
+            background: tab === 3 ? '#fed' : ''
+        },
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\App.js",
+            lineNumber: 72
+        },
+        __self: undefined
+    }, "Mint")), signedIn && tab === 3 && /*#__PURE__*/ _reactDefault.default.createElement("div", {
+        id: "contract",
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\App.js",
+            lineNumber: 77
+        },
+        __self: undefined
+    }, signedIn && /*#__PURE__*/ _reactDefault.default.createElement(_contract.Contract, {
+        near,
+        update,
+        wallet,
+        account,
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\App.js",
+            lineNumber: 80
+        },
+        __self: undefined
+    })), /*#__PURE__*/ _reactDefault.default.createElement("div", {
+        id: "gallery",
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\App.js",
+            lineNumber: 84
+        },
+        __self: undefined
+    }, /*#__PURE__*/ _reactDefault.default.createElement(_gallery.Gallery, {
+        app,
+        update,
+        loading,
+        contractAccount,
+        account,
+        dispatch,
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\App.js",
+            lineNumber: 85
+        },
+        __self: undefined
+    }))));
+};
+_s(App, "S3hRh+JH7YYQuuFxwGVIAqCdjDE=");
+_c = App;
+exports.default = App;
+var _c;
+$RefreshReg$(_c, "App");
+
+  helpers.postlude(module);
+} finally {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}

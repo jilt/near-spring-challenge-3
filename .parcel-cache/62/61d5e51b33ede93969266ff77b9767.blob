@@ -1,0 +1,601 @@
+var helpers = require("../../node_modules/@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js");
+var prevRefreshReg = window.$RefreshReg$;
+var prevRefreshSig = window.$RefreshSig$;
+helpers.prelude(module);
+
+try {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "Gallery", ()=>Gallery
+);
+var _react = require("react");
+var _reactDefault = parcelHelpers.interopDefault(_react);
+var _nearApiJs = require("near-api-js");
+var _near = require("../state/near");
+var _nearUtils = require("../utils/near-utils");
+var _history = require("../utils/history");
+var _token = require("./Token");
+var _s = $RefreshSig$();
+// api-helper config
+const domain = 'https://helper.nearapi.org';
+const batchPath = domain + '/v1/batch/';
+const headers = new Headers({
+    'max-age': '300'
+});
+const ADD_SALE = '__ADD_SALE';
+const BAD_OWNER_ID = [
+    'mikedigitalegg.testnet',
+    'web_dev.testnet'
+];
+const PATH_SPLIT = '?t=';
+const SUB_SPLIT = '&=';
+const { utils: { format: { formatNearAmount  }  }  } = _nearApiJs;
+const n2f = (amount)=>parseFloat(_near.parseNearAmount(amount, 8))
+;
+const sortFunctions = {
+    1: (a, b)=>parseInt(a.metadata.issued_at || '0') - parseInt(b.metadata.issued_at || '0')
+    ,
+    2: (b, a)=>parseInt(a.metadata.issued_at || '0') - parseInt(b.metadata.issued_at || '0')
+    ,
+    3: (a, b)=>n2f(a.conditions?.near || '0') - n2f(b.conditions?.near || '0')
+    ,
+    4: (b, a)=>n2f(a.conditions?.near || '0') - n2f(b.conditions?.near || '0')
+};
+const Gallery = ({ app , update , contractAccount , account , loading , dispatch  })=>{
+    _s();
+    if (!contractAccount) return null;
+    const { tab , sort , filter  } = app;
+    let accountId = '';
+    if (account) accountId = account.accountId;
+    /// market
+    const [sales, setSales] = _react.useState([]);
+    const [allTokens, setAllTokens] = _react.useState([]);
+    const [offerPrice, setOfferPrice] = _react.useState('');
+    const [offerToken, setOfferToken] = _react.useState('near');
+    /// updating user tokens
+    const [tokens, setTokens] = _react.useState([]);
+    const [storage, setStorage] = _react.useState(false);
+    const [price, setPrice] = _react.useState('');
+    const [ft, setFT] = _react.useState('near');
+    const [saleConditions, setSaleConditions] = _react.useState([]);
+    _react.useEffect(()=>{
+        if (!loading) loadItems();
+    }, [
+        loading
+    ]);
+    // path to token
+    const [path, setPath] = _react.useState(window.location.href);
+    _history.useHistory(()=>{
+        setPath(window.location.href);
+    });
+    let tokenId;
+    let pathSplit = path.split(PATH_SPLIT)[1];
+    if (allTokens.length && pathSplit?.length) {
+        console.log(pathSplit);
+        tokenId = pathSplit.split(SUB_SPLIT)[0];
+    }
+    const loadItems = async ()=>{
+        if (accountId.length) {
+            const storageResponse = await contractAccount.viewFunction(_nearUtils.marketId, 'storage_paid', {
+                account_id: account.accountId
+            });
+            if (typeof storageResponse === 'string') setStorage(storageResponse !== '0');
+            else setStorage(storageResponse);
+        }
+        /// users tokens
+        if (account) {
+            const tokens1 = await contractAccount.viewFunction(_nearUtils.contractId, 'nft_tokens_for_owner', {
+                account_id: account.accountId,
+                from_index: '0'
+            });
+            const sales1 = await contractAccount.viewFunction(_nearUtils.marketId, 'get_sales_by_owner_id', {
+                account_id: account.accountId,
+                from_index: '0'
+            });
+            // merge tokens with sale data if it's on sale
+            for(let i = 0; i < tokens1.length; i++){
+                const { token_id  } = tokens1[i];
+                let sale = sales1.find(({ token_id: t  })=>t === token_id
+                );
+                // don't have it in state, go find sale data
+                if (!sale) sale = await contractAccount.viewFunction(_nearUtils.marketId, 'get_sale', {
+                    nft_contract_token: _nearUtils.contractId + ":" + token_id
+                }).catch(()=>{
+                });
+                tokens1[i] = Object.assign(tokens1[i], sale || {
+                });
+            }
+            setTokens(tokens1);
+        }
+        /// all sales
+        // need to use NFT helper for deployed contract
+        let sales1 = [];
+        {
+            const salesUrl = batchPath + JSON.stringify([
+                {
+                    contract: _nearUtils.marketId,
+                    method: 'get_sales_by_nft_contract_id',
+                    args: {
+                        nft_contract_id: _nearUtils.contractId
+                    },
+                    batch: {
+                        from_index: '0',
+                        limit: '1000',
+                        step: '50',
+                        flatten: []
+                    },
+                    sort: {
+                        path: 'metadata.issued_at'
+                    }
+                }
+            ]);
+            sales1 = (await fetch(salesUrl, {
+                headers
+            }).then((res)=>res.json()
+            ))[0];
+        }
+        const tokens1 = await contractAccount.viewFunction(_nearUtils.contractId, 'nft_tokens', {
+            token_ids: sales1.filter(({ nft_contract_id  })=>nft_contract_id === _nearUtils.contractId
+            ).map(({ token_id  })=>token_id
+            )
+        });
+        // merge sale listing with nft token data
+        for(let i = 0; i < sales1.length; i++){
+            const { token_id  } = sales1[i];
+            let token = tokens1.find(({ token_id: t  })=>t === token_id
+            );
+            // don't have it in batch, go find token data
+            if (!token) token = await contractAccount.viewFunction(_nearUtils.contractId, 'nft_token', {
+                token_id
+            });
+            sales1[i] = Object.assign(sales1[i], token);
+        }
+        sales1 = sales1.filter(({ owner_id  })=>!BAD_OWNER_ID.includes(owner_id)
+        );
+        setSales(sales1);
+        // all tokens
+        // need to use NFT helper for deployed
+        let allTokens1 = [];
+        {
+            const nft_total_supply = await contractAccount.viewFunction(_nearUtils.contractId, 'nft_total_supply');
+            const allTokensUrl = batchPath + JSON.stringify([
+                {
+                    contract: _nearUtils.contractId,
+                    method: 'nft_tokens',
+                    args: {
+                    },
+                    batch: {
+                        from_index: '0',
+                        limit: nft_total_supply,
+                        step: '50',
+                        flatten: []
+                    },
+                    sort: {
+                        path: 'metadata.issued_at'
+                    }
+                }
+            ]);
+            allTokens1 = (await fetch(allTokensUrl, {
+                headers
+            }).then((res)=>res.json()
+            ))[0];
+        }
+        allTokens1 = allTokens1.filter(({ owner_id  })=>!BAD_OWNER_ID.includes(owner_id)
+        );
+        setAllTokens(allTokens1);
+    };
+    /// setters
+    const handleAcceptOffer = async (token_id, ft_token_id)=>{
+        if (ft_token_id !== 'near') return alert('currently only accepting NEAR offers');
+        await account.functionCall(_nearUtils.marketId, 'accept_offer', {
+            nft_contract_id: _nearUtils.contractId,
+            token_id,
+            ft_token_id
+        }, _near.GAS);
+    };
+    const handleRegisterStorage = async ()=>{
+        const storageMarket = await account.viewFunction(_nearUtils.marketId, 'storage_amount', {
+        }, _near.GAS);
+        // low amount 0.01 N means it's only for (1 sale 1kb storage) so multiply by 10
+        let deposit = storageMarket === '10000000000000000000000' ? '100000000000000000000000' : storageMarket;
+        await account.functionCall(_nearUtils.marketId, 'storage_deposit', {
+        }, _near.GAS, deposit).catch(()=>{
+        });
+    };
+    const handleSaleUpdate = async (token_id, newSaleConditions)=>{
+        const sale = await contractAccount.viewFunction(_nearUtils.marketId, 'get_sale', {
+            nft_contract_token: _nearUtils.contractId + ":" + token_id
+        }).catch(()=>{
+        });
+        if (sale) await account.functionCall(_nearUtils.marketId, 'update_price', {
+            nft_contract_id: _nearUtils.contractId,
+            token_id,
+            ft_token_id: newSaleConditions[0].ft_token_id,
+            price: newSaleConditions[0].price
+        }, _near.GAS);
+        else await account.functionCall(_nearUtils.contractId, 'nft_approve', {
+            token_id,
+            account_id: _nearUtils.marketId,
+            msg: JSON.stringify({
+                sale_conditions: newSaleConditions
+            })
+        }, _near.GAS, _near.parseNearAmount('0.01'));
+    };
+    let market = sales;
+    if (tab !== 2 && filter === 1) market = market.concat(allTokens.filter(({ token_id  })=>!market.some(({ token_id: t  })=>t === token_id
+        )
+    ));
+    market.sort(sortFunctions[sort]);
+    tokens.sort(sortFunctions[sort]);
+    const token = market.find(({ token_id  })=>tokenId === token_id
+    );
+    if (token) return(/*#__PURE__*/ _reactDefault.default.createElement(_token.Token, {
+        dispatch,
+        account,
+        token,
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+            lineNumber: 237
+        },
+        __self: undefined
+    }));
+    return(/*#__PURE__*/ _reactDefault.default.createElement(_reactDefault.default.Fragment, null, tab < 3 && /*#__PURE__*/ _reactDefault.default.createElement("center", {
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+            lineNumber: 243
+        },
+        __self: undefined
+    }, tab !== 2 && /*#__PURE__*/ _reactDefault.default.createElement("button", {
+        onClick: ()=>update('app.filter', filter === 2 ? 1 : 2)
+        ,
+        style: {
+            background: '#fed'
+        },
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+            lineNumber: 245
+        },
+        __self: undefined
+    }, filter === 1 ? 'All' : 'Sales'), /*#__PURE__*/ _reactDefault.default.createElement("button", {
+        onClick: ()=>update('app.sort', sort === 2 ? 1 : 2)
+        ,
+        style: {
+            background: sort === 1 || sort === 2 ? '#fed' : ''
+        },
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+            lineNumber: 247
+        },
+        __self: undefined
+    }, "Date ", sort === 1 && '⬆️', sort === 2 && '⬇️'), tab !== 2 && /*#__PURE__*/ _reactDefault.default.createElement("button", {
+        onClick: ()=>update('app.sort', sort === 4 ? 3 : 4)
+        ,
+        style: {
+            background: sort === 3 || sort === 4 ? '#fed' : ''
+        },
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+            lineNumber: 249
+        },
+        __self: undefined
+    }, "Price ", sort === 3 && '⬆️', sort === 4 && '⬇️')), tab === 1 && market.map(({ metadata: { media  } , owner_id , token_id , conditions ={
+    } , bids ={
+    } , royalty ={
+    }  })=>/*#__PURE__*/ _reactDefault.default.createElement("div", {
+            key: token_id,
+            className: "item",
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 262
+            },
+            __self: undefined
+        }, /*#__PURE__*/ _reactDefault.default.createElement("img", {
+            src: media,
+            onClick: ()=>history.pushState({
+                }, '', window.location.pathname + '?t=' + token_id)
+            ,
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 263
+            },
+            __self: undefined
+        }), /*#__PURE__*/ _reactDefault.default.createElement("p", {
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 264
+            },
+            __self: undefined
+        }, accountId !== owner_id ? `Owned by ${_nearUtils.formatAccountId(owner_id)}` : `You own this!`), Object.keys(conditions).length > 0 && /*#__PURE__*/ _reactDefault.default.createElement(_reactDefault.default.Fragment, null, /*#__PURE__*/ _reactDefault.default.createElement("h4", {
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 266
+            },
+            __self: undefined
+        }, "Royalties"), Object.keys(royalty).length > 0 ? Object.entries(royalty).map(([receiver, amount])=>/*#__PURE__*/ _reactDefault.default.createElement("div", {
+                key: receiver,
+                __source: {
+                    fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                    lineNumber: 269
+                },
+                __self: undefined
+            }, receiver, " - ", amount / 100, "%")
+        ) : /*#__PURE__*/ _reactDefault.default.createElement("p", {
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 273
+            },
+            __self: undefined
+        }, "This token has no royalties.")), Object.keys(conditions).length > 0 && /*#__PURE__*/ _reactDefault.default.createElement(_reactDefault.default.Fragment, null, /*#__PURE__*/ _reactDefault.default.createElement("h4", {
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 279
+            },
+            __self: undefined
+        }, "Sale Conditions"), Object.entries(conditions).map(([ft_token_id, price1])=>/*#__PURE__*/ _reactDefault.default.createElement("div", {
+                className: "margin-bottom",
+                key: ft_token_id,
+                __source: {
+                    fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                    lineNumber: 281
+                },
+                __self: undefined
+            }, price1 === '0' ? 'open' : formatNearAmount(price1, 4), " - ", _near.token2symbol[ft_token_id])
+        ), accountId.length > 0 && accountId !== owner_id && /*#__PURE__*/ _reactDefault.default.createElement(_reactDefault.default.Fragment, null, /*#__PURE__*/ _reactDefault.default.createElement("input", {
+            type: "number",
+            placeholder: "Price",
+            value: offerPrice,
+            onChange: (e)=>setOfferPrice(e.target.value)
+            ,
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 287
+            },
+            __self: undefined
+        }), _near.getTokenOptions(offerToken, setOfferToken, Object.keys(conditions)), /*#__PURE__*/ _reactDefault.default.createElement("button", {
+            onClick: ()=>_near.handleOffer(account, token_id, offerToken, offerPrice)
+            ,
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 291
+            },
+            __self: undefined
+        }, "Offer"))), Object.keys(bids).length > 0 && /*#__PURE__*/ _reactDefault.default.createElement(_reactDefault.default.Fragment, null, /*#__PURE__*/ _reactDefault.default.createElement("h4", {
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 298
+            },
+            __self: undefined
+        }, "Offers"), Object.entries(bids).map(([ft_token_id, { owner_id: bid_owner_id , price: price1  }])=>/*#__PURE__*/ _reactDefault.default.createElement("div", {
+                className: "offers",
+                key: ft_token_id,
+                __source: {
+                    fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                    lineNumber: 300
+                },
+                __self: undefined
+            }, /*#__PURE__*/ _reactDefault.default.createElement("div", {
+                __source: {
+                    fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                    lineNumber: 301
+                },
+                __self: undefined
+            }, price1 === '0' ? 'open' : formatNearAmount(price1, 4), " - ", _near.token2symbol[ft_token_id], " by ", bid_owner_id), accountId === owner_id && /*#__PURE__*/ _reactDefault.default.createElement("button", {
+                onClick: ()=>handleAcceptOffer(token_id, ft_token_id)
+                ,
+                __source: {
+                    fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                    lineNumber: 306
+                },
+                __self: undefined
+            }, "Accept"))
+        )))
+    ), tab === 2 && /*#__PURE__*/ _reactDefault.default.createElement(_reactDefault.default.Fragment, null, !tokens.length && /*#__PURE__*/ _reactDefault.default.createElement("p", {
+        className: "margin",
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+            lineNumber: 317
+        },
+        __self: undefined
+    }, "No NFTs. Try minting something!"), tokens.map(({ metadata: { media  } , owner_id , token_id , conditions ={
+    } , bids ={
+    } , royalty ={
+    }  })=>/*#__PURE__*/ _reactDefault.default.createElement("div", {
+            key: token_id,
+            className: "item",
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 326
+            },
+            __self: undefined
+        }, /*#__PURE__*/ _reactDefault.default.createElement("img", {
+            src: media,
+            onClick: ()=>history.pushState({
+                }, '', window.location.pathname + '?t=' + token_id)
+            ,
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 327
+            },
+            __self: undefined
+        }), storage ? /*#__PURE__*/ _reactDefault.default.createElement(_reactDefault.default.Fragment, null, /*#__PURE__*/ _reactDefault.default.createElement("h4", {
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 330
+            },
+            __self: undefined
+        }, "Royalties"), Object.keys(royalty).length > 0 ? Object.entries(royalty).map(([receiver, amount])=>/*#__PURE__*/ _reactDefault.default.createElement("div", {
+                key: receiver,
+                __source: {
+                    fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                    lineNumber: 333
+                },
+                __self: undefined
+            }, receiver, " - ", amount / 100, "%")
+        ) : /*#__PURE__*/ _reactDefault.default.createElement("p", {
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 337
+            },
+            __self: undefined
+        }, "This token has no royalties."), Object.keys(conditions).length > 0 && /*#__PURE__*/ _reactDefault.default.createElement(_reactDefault.default.Fragment, null, /*#__PURE__*/ _reactDefault.default.createElement("h4", {
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 341
+            },
+            __self: undefined
+        }, "Current Sale Conditions"), Object.entries(conditions).map(([ft_token_id, price1])=>/*#__PURE__*/ _reactDefault.default.createElement("div", {
+                className: "margin-bottom",
+                key: ft_token_id,
+                __source: {
+                    fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                    lineNumber: 343
+                },
+                __self: undefined
+            }, price1 === '0' ? 'open' : formatNearAmount(price1, 4), " - ", _near.token2symbol[ft_token_id])
+        )), saleConditions.length > 0 && /*#__PURE__*/ _reactDefault.default.createElement("div", {
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 351
+            },
+            __self: undefined
+        }, /*#__PURE__*/ _reactDefault.default.createElement("h4", {
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 352
+            },
+            __self: undefined
+        }, "Pending Sale Updates"), saleConditions.map(({ price: price1 , ft_token_id  })=>/*#__PURE__*/ _reactDefault.default.createElement("div", {
+                className: "margin-bottom",
+                key: ft_token_id,
+                __source: {
+                    fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                    lineNumber: 354
+                },
+                __self: undefined
+            }, price1 === '0' ? 'open' : formatNearAmount(price1, 4), " - ", _near.token2symbol[ft_token_id])
+        ), /*#__PURE__*/ _reactDefault.default.createElement("button", {
+            className: "pulse-button",
+            onClick: ()=>handleSaleUpdate(token_id)
+            ,
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 358
+            },
+            __self: undefined
+        }, "Update Sale Conditions")), accountId === owner_id && /*#__PURE__*/ _reactDefault.default.createElement(_reactDefault.default.Fragment, null, /*#__PURE__*/ _reactDefault.default.createElement("div", {
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 363
+            },
+            __self: undefined
+        }, /*#__PURE__*/ _reactDefault.default.createElement("h4", {
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 364
+            },
+            __self: undefined
+        }, "Add Sale Conditions"), /*#__PURE__*/ _reactDefault.default.createElement("input", {
+            type: "number",
+            placeholder: "Price",
+            value: price,
+            onChange: (e)=>setPrice(e.target.value)
+            ,
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 365
+            },
+            __self: undefined
+        }), _near.getTokenOptions(ft, setFT), /*#__PURE__*/ _reactDefault.default.createElement("button", {
+            onClick: ()=>{
+                if (!price.length) return alert('Enter a price');
+                const newSaleConditions = saleConditions.filter(({ ft_token_id  })=>ft_token_id !== ft
+                ).concat([
+                    {
+                        price: _near.parseNearAmount(price),
+                        ft_token_id: ft
+                    }
+                ]);
+                setSaleConditions(newSaleConditions);
+                setPrice('');
+                setFT('near');
+                handleSaleUpdate(token_id, newSaleConditions);
+            },
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 369
+            },
+            __self: undefined
+        }, "Add")), /*#__PURE__*/ _reactDefault.default.createElement("div", {
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 385
+            },
+            __self: undefined
+        }, /*#__PURE__*/ _reactDefault.default.createElement("i", {
+            style: {
+                fontSize: '0.75rem'
+            },
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 386
+            },
+            __self: undefined
+        }, "Note: price 0 means open offers"))), Object.keys(bids).length > 0 && /*#__PURE__*/ _reactDefault.default.createElement(_reactDefault.default.Fragment, null, /*#__PURE__*/ _reactDefault.default.createElement("h4", {
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 392
+            },
+            __self: undefined
+        }, "Offers"), Object.entries(bids).map(([ft_token_id, { owner_id: owner_id1 , price: price1  }])=>/*#__PURE__*/ _reactDefault.default.createElement("div", {
+                className: "offers",
+                key: ft_token_id,
+                __source: {
+                    fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                    lineNumber: 394
+                },
+                __self: undefined
+            }, /*#__PURE__*/ _reactDefault.default.createElement("div", {
+                __source: {
+                    fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                    lineNumber: 395
+                },
+                __self: undefined
+            }, price1 === '0' ? 'open' : formatNearAmount(price1, 4), " - ", _near.token2symbol[ft_token_id]), /*#__PURE__*/ _reactDefault.default.createElement("button", {
+                onClick: ()=>handleAcceptOffer(token_id, ft_token_id)
+                ,
+                __source: {
+                    fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                    lineNumber: 398
+                },
+                __self: undefined
+            }, "Accept"))
+        ))) : /*#__PURE__*/ _reactDefault.default.createElement("div", {
+            className: "center",
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 405
+            },
+            __self: undefined
+        }, /*#__PURE__*/ _reactDefault.default.createElement("button", {
+            onClick: ()=>handleRegisterStorage()
+            ,
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Gallery.js",
+                lineNumber: 406
+            },
+            __self: undefined
+        }, "Register with Market to Sell")))
+    ))));
+};
+_s(Gallery, "lW0Gg2Rj9g+16qlQQnU1/XbEgRE=", false, function() {
+    return [_history.useHistory];
+});
+_c = Gallery;
+var _c;
+$RefreshReg$(_c, "Gallery");
+
+  helpers.postlude(module);
+} finally {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}

@@ -1,0 +1,42 @@
+var helpers = require("../../node_modules/@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js");
+var prevRefreshReg = window.$RefreshReg$;
+var prevRefreshSig = window.$RefreshSig$;
+helpers.prelude(module);
+
+try {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "useHistory", ()=>useHistory
+);
+var _react = require("react");
+var _s = $RefreshSig$();
+(function(history) {
+    var pushState = history.pushState;
+    history.pushState = function(state) {
+        if (typeof history.onpushstate == "function") history.onpushstate({
+            state: state
+        });
+        // whatever else you want to do
+        // maybe call onhashchange e.handler
+        return pushState.apply(history, arguments);
+    };
+})(window.history);
+const useHistory = (callback)=>{
+    _s();
+    _react.useEffect(()=>{
+        window.onpopstate = history.onpushstate = ()=>{
+            setTimeout(callback, 10);
+        };
+        return ()=>window.onpopstate = history.onpushstate = null
+        ;
+    }, [
+        callback
+    ]);
+};
+_s(useHistory, "OD7bBpZva5O2jO+Puf00hKivP7c=");
+
+  helpers.postlude(module);
+} finally {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}

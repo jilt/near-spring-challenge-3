@@ -1,0 +1,124 @@
+var helpers = require("../../node_modules/@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js");
+var prevRefreshReg = window.$RefreshReg$;
+var prevRefreshSig = window.$RefreshSig$;
+helpers.prelude(module);
+
+try {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "GAS", ()=>GAS
+);
+parcelHelpers.export(exports, "explorerUrl", ()=>explorerUrl
+);
+parcelHelpers.export(exports, "networkId", ()=>networkId
+);
+parcelHelpers.export(exports, "nodeUrl", ()=>nodeUrl
+);
+parcelHelpers.export(exports, "walletUrl", ()=>walletUrl
+);
+parcelHelpers.export(exports, "nameSuffix", ()=>nameSuffix
+);
+parcelHelpers.export(exports, "contractId", ()=>contractId
+);
+parcelHelpers.export(exports, "formatNearAmount", ()=>formatNearAmount
+);
+parcelHelpers.export(exports, "parseNearAmount", ()=>parseNearAmount
+);
+parcelHelpers.export(exports, "initNear", ()=>initNear
+);
+parcelHelpers.export(exports, "updateWallet", ()=>updateWallet
+);
+parcelHelpers.export(exports, "token2symbol", ()=>token2symbol
+);
+parcelHelpers.export(exports, "getTokenOptions", ()=>getTokenOptions
+);
+parcelHelpers.export(exports, "handleOffer", ()=>handleOffer
+);
+var _react = require("react");
+var _reactDefault = parcelHelpers.interopDefault(_react);
+var _config = require("../config");
+var _configDefault = parcelHelpers.interopDefault(_config);
+var _nearApiJs = require("near-api-js");
+var _nearUtils = require("../utils/near-utils");
+const { GAS , explorerUrl , networkId , nodeUrl , walletUrl , nameSuffix , contractName: contractId ,  } = _configDefault.default();
+const marketId = 'market.' + contractId;
+const { utils: { format: { formatNearAmount , parseNearAmount  }  }  } = _nearApiJs;
+const initNear = ()=>async ({ update , getState , dispatch  })=>{
+        const { near , wallet , contractAccount  } = await _nearUtils.getWallet();
+        wallet.signIn = ()=>{
+            wallet.requestSignIn(contractId, 'Blah Blah');
+        };
+        const signOut = wallet.signOut;
+        wallet.signOut = ()=>{
+            signOut.call(wallet);
+            update('wallet.signedIn', false);
+            update('', {
+                account: null
+            });
+            update('app.tab', 1);
+        };
+        wallet.signedIn = wallet.isSignedIn();
+        let account;
+        if (wallet.signedIn) {
+            account = wallet.account();
+            wallet.balance = formatNearAmount((await wallet.account().getAccountBalance()).available, 4);
+            await update('', {
+                near,
+                wallet,
+                contractAccount,
+                account
+            });
+        }
+        await update('', {
+            near,
+            wallet,
+            contractAccount,
+            account
+        });
+    }
+;
+const updateWallet = ()=>async ({ update , getState  })=>{
+        const { wallet  } = await getState();
+        wallet.balance = formatNearAmount((await wallet.account().getAccountBalance()).available, 2);
+        await update('', {
+            wallet
+        });
+    }
+;
+const token2symbol = {
+    "near": "NEAR"
+};
+const allTokens = Object.keys(token2symbol);
+const getTokenOptions = (value, setter, accepted = allTokens)=>/*#__PURE__*/ _reactDefault.default.createElement("select", {
+        value: value,
+        onChange: (e)=>setter(e.target.value)
+        ,
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\state\\near.js",
+            lineNumber: 66
+        },
+        __self: undefined
+    }, accepted.map((value1)=>/*#__PURE__*/ _reactDefault.default.createElement("option", {
+            key: value1,
+            value: value1,
+            __source: {
+                fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\state\\near.js",
+                lineNumber: 68
+            },
+            __self: undefined
+        }, token2symbol[value1])
+    ))
+;
+const handleOffer = async (account, token_id, offerToken, offerPrice)=>{
+    if (offerToken !== 'near') return alert('currently only accepting NEAR offers');
+    if (offerToken === 'near') await account.functionCall(marketId, 'offer', {
+        nft_contract_id: contractId,
+        token_id
+    }, GAS, parseNearAmount(offerPrice));
+};
+
+  helpers.postlude(module);
+} finally {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}

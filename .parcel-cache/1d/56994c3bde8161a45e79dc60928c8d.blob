@@ -1,0 +1,81 @@
+var helpers = require("../../node_modules/@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js");
+var prevRefreshReg = window.$RefreshReg$;
+var prevRefreshSig = window.$RefreshSig$;
+helpers.prelude(module);
+
+try {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "Wallet", ()=>Wallet
+);
+var _react = require("react");
+var _reactDefault = parcelHelpers.interopDefault(_react);
+var _nearApiJs = require("near-api-js");
+var _near = require("../state/near");
+var _nearUtils = require("../utils/near-utils");
+var _s = $RefreshSig$();
+const { KeyPair , utils: { PublicKey , format: { formatNearAmount  }  }  } = _nearApiJs;
+const Wallet = ({ wallet , account , update , dispatch , handleClose  })=>{
+    _s();
+    const [accountId, setAccountId] = _react.useState('');
+    const [proceeds, setProceeds] = _react.useState('0');
+    if (wallet && wallet.signedIn) return(/*#__PURE__*/ _reactDefault.default.createElement(_reactDefault.default.Fragment, null, /*#__PURE__*/ _reactDefault.default.createElement("h3", {
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Wallet.js",
+            lineNumber: 25
+        },
+        __self: undefined
+    }, "Wallet"), /*#__PURE__*/ _reactDefault.default.createElement("p", {
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Wallet.js",
+            lineNumber: 26
+        },
+        __self: undefined
+    }, "Balance: ", wallet.balance, " N"), /*#__PURE__*/ _reactDefault.default.createElement("br", {
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Wallet.js",
+            lineNumber: 27
+        },
+        __self: undefined
+    }), /*#__PURE__*/ _reactDefault.default.createElement("button", {
+        onClick: handleClose,
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Wallet.js",
+            lineNumber: 28
+        },
+        __self: undefined
+    }, "Close"), /*#__PURE__*/ _reactDefault.default.createElement("br", {
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Wallet.js",
+            lineNumber: 29
+        },
+        __self: undefined
+    }), /*#__PURE__*/ _reactDefault.default.createElement("button", {
+        onClick: ()=>wallet.signOut()
+        ,
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Wallet.js",
+            lineNumber: 30
+        },
+        __self: undefined
+    }, "Sign Out")));
+    return(/*#__PURE__*/ _reactDefault.default.createElement(_reactDefault.default.Fragment, null, /*#__PURE__*/ _reactDefault.default.createElement("button", {
+        onClick: ()=>wallet.signIn()
+        ,
+        __source: {
+            fileName: "C:\\Users\\jeelt\\Documents\\GitHub\\marketplace\\NFT-Staking\\src\\components\\Wallet.js",
+            lineNumber: 35
+        },
+        __self: undefined
+    }, "Connect Wallet")));
+};
+_s(Wallet, "uHdB5yOnIj5LwPDIcoJSRgUAcaU=");
+_c = Wallet;
+var _c;
+$RefreshReg$(_c, "Wallet");
+
+  helpers.postlude(module);
+} finally {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}

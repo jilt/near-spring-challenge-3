@@ -1,0 +1,27 @@
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "share", ()=>share
+);
+var _copyToClipboard = require("copy-to-clipboard");
+var _copyToClipboardDefault = parcelHelpers.interopDefault(_copyToClipboard);
+const share = (text)=>{
+    if (navigator.share && /mobile/gi.test(window.navigator.userAgent)) {
+        navigator.share({
+            text
+        }).catch((e)=>{
+            _copyToClipboardDefault.default(text);
+            return {
+                mobile: true,
+                error: true
+            };
+        });
+        return {
+            mobile: true
+        };
+    } else {
+        _copyToClipboardDefault.default(text);
+        return {
+            mobile: false
+        };
+    }
+};

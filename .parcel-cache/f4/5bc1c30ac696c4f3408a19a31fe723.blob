@@ -1,0 +1,44 @@
+var Buffer = require("buffer").Buffer;
+"use strict";
+/**
+ * NEAR RPC API request types and responses
+ * @module
+ */ Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.getTransactionLastResult = exports.Provider = exports.IdType = exports.FinalExecutionStatusBasic = exports.ExecutionStatusBasic = void 0;
+var ExecutionStatusBasic;
+(function(ExecutionStatusBasic1) {
+    ExecutionStatusBasic1["Unknown"] = "Unknown";
+    ExecutionStatusBasic1["Pending"] = "Pending";
+    ExecutionStatusBasic1["Failure"] = "Failure";
+})(ExecutionStatusBasic = exports.ExecutionStatusBasic || (exports.ExecutionStatusBasic = {
+}));
+var FinalExecutionStatusBasic;
+(function(FinalExecutionStatusBasic1) {
+    FinalExecutionStatusBasic1["NotStarted"] = "NotStarted";
+    FinalExecutionStatusBasic1["Started"] = "Started";
+    FinalExecutionStatusBasic1["Failure"] = "Failure";
+})(FinalExecutionStatusBasic = exports.FinalExecutionStatusBasic || (exports.FinalExecutionStatusBasic = {
+}));
+var IdType;
+(function(IdType1) {
+    IdType1["Transaction"] = "transaction";
+    IdType1["Receipt"] = "receipt";
+})(IdType = exports.IdType || (exports.IdType = {
+}));
+/** @hidden */ class Provider {
+}
+exports.Provider = Provider;
+/** @hidden */ function getTransactionLastResult(txResult) {
+    if (typeof txResult.status === 'object' && typeof txResult.status.SuccessValue === 'string') {
+        const value = Buffer.from(txResult.status.SuccessValue, 'base64').toString();
+        try {
+            return JSON.parse(value);
+        } catch (e) {
+            return value;
+        }
+    }
+    return null;
+}
+exports.getTransactionLastResult = getTransactionLastResult;

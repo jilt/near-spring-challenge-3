@@ -1,0 +1,191 @@
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "GAS", ()=>GAS
+);
+parcelHelpers.export(exports, "networkId", ()=>networkId
+);
+parcelHelpers.export(exports, "nodeUrl", ()=>nodeUrl
+);
+parcelHelpers.export(exports, "walletUrl", ()=>walletUrl
+);
+parcelHelpers.export(exports, "nameSuffix", ()=>nameSuffix
+);
+parcelHelpers.export(exports, "contractName", ()=>contractName
+);
+parcelHelpers.export(exports, "contractMethods", ()=>contractMethods
+);
+parcelHelpers.export(exports, "accessKeyMethods", ()=>accessKeyMethods
+);
+parcelHelpers.export(exports, "near", ()=>near
+);
+parcelHelpers.export(exports, "contractId", ()=>contractId
+);
+parcelHelpers.export(exports, "marketId", ()=>marketId
+);
+parcelHelpers.export(exports, "setSignerFromSeed", ()=>setSignerFromSeed
+);
+parcelHelpers.export(exports, "formatAccountId", ()=>formatAccountId
+);
+parcelHelpers.export(exports, "getContract", ()=>getContract
+);
+parcelHelpers.export(exports, "getWallet", ()=>getWallet
+);
+parcelHelpers.export(exports, "getSignature", ()=>getSignature
+);
+parcelHelpers.export(exports, "postSignedJson", ()=>postSignedJson
+);
+parcelHelpers.export(exports, "postJson", ()=>postJson
+);
+parcelHelpers.export(exports, "createGuestAccount", ()=>createGuestAccount
+);
+parcelHelpers.export(exports, "createAccessKeyAccount", ()=>createAccessKeyAccount
+);
+parcelHelpers.export(exports, "hasKey", ()=>hasKey
+);
+parcelHelpers.export(exports, "isAccountTaken", ()=>isAccountTaken
+);
+parcelHelpers.export(exports, "getContractSigner", ()=>getContractSigner
+);
+var _config = require("../config");
+var _configDefault = parcelHelpers.interopDefault(_config);
+var _nearApiJs = require("near-api-js");
+var Buffer = require("buffer").Buffer;
+const { GAS , networkId , nodeUrl , walletUrl , nameSuffix , contractName , contractMethods , accessKeyMethods ,  } = _configDefault.default();
+const { Near , keyStores , Account , WalletAccount , Contract , InMemorySigner ,  } = _nearApiJs;
+const near = new Near({
+    networkId,
+    nodeUrl,
+    walletUrl,
+    deps: {
+        keyStore: new keyStores.BrowserLocalStorageKeyStore()
+    }
+});
+const contractId = contractName;
+const marketId = 'market.' + contractName;
+const setSignerFromSeed = async (accountId, seedPhrase)=>{
+    const { secretKey  } = parseSeedPhrase(seedPhrase);
+    const keyPair = KeyPair.fromString(secretKey);
+    near.connection.signer.keyStore.setKey(networkId, accountId, keyPair);
+};
+function formatAccountId(accountId, len = 48) {
+    if (accountId.length > len) return accountId.substr(0, len - 3) + '...';
+    return accountId;
+}
+function getContract(account, methods = contractMethods) {
+    return new Contract(account, contractName, {
+        ...methods
+    });
+}
+const getWallet = async ()=>{
+    const contractId1 = 'app-name.account-id.near';
+    const wallet = new WalletAccount(near);
+    // walletAccount instance gets access key for contractId
+    const contractAccount = new Account(near.connection, contractName);
+    return {
+        near,
+        wallet,
+        contractAccount
+    };
+};
+const getSignature = async (account, key)=>{
+    const { accountId  } = account;
+    const block = await account.connection.provider.block({
+        finality: 'final'
+    });
+    const blockNumber = block.header.height.toString();
+    const signer = account.inMemorySigner || account.connection.signer;
+    const signed = await signer.signMessage(Buffer.from(blockNumber), accountId, networkId);
+    const blockNumberSignature = Buffer.from(signed.signature).toString('base64');
+    return {
+        blockNumber,
+        blockNumberSignature
+    };
+};
+const postSignedJson = async ({ account , contractName: contractName1 , url , data ={
+}  })=>{
+    return await fetch(url, {
+        method: 'POST',
+        headers: new Headers({
+            'content-type': 'application/json'
+        }),
+        body: JSON.stringify({
+            ...data,
+            accountId: account.accountId,
+            contractName: contractName1,
+            ...await getSignature(account)
+        })
+    }).then((res)=>res.json()
+    );
+};
+const postJson = async ({ url , data ={
+}  })=>{
+    return await fetch(url, {
+        method: 'POST',
+        headers: new Headers({
+            'content-type': 'application/json'
+        }),
+        body: JSON.stringify({
+            ...data
+        })
+    }).then((res)=>res.json()
+    );
+};
+const createGuestAccount = (near1, key)=>{
+    key.toString = ()=>key.secretKey
+    ;
+    near1.connection.signer.keyStore.setKey(networkId, 'guests.' + contractName, key);
+    const account = new Account(near1.connection, 'guests.' + contractName);
+    return account;
+};
+const createAccessKeyAccount = (near1, key)=>{
+    key.toString = ()=>key.secretKey
+    ;
+    near1.connection.signer.keyStore.setKey(networkId, contractName, key);
+    const account = new Account(near1.connection, contractName);
+    return account;
+};
+const hasKey = async (near1, accountId, publicKey)=>{
+    const pubKeyStr = publicKey.toString();
+    const account = new _nearApiJs.Account(near1.connection, accountId);
+    try {
+        const accessKeys = await account.getAccessKeys();
+        if (accessKeys.length > 0 && accessKeys.find(({ public_key  })=>public_key === pubKeyStr
+        )) return true;
+    } catch (e) {
+        console.warn(e);
+    }
+    return false;
+};
+const isAccountTaken = async (accountId)=>{
+    const account = new _nearApiJs.Account(near.connection, accountId);
+    try {
+        await account.state();
+        return true;
+    } catch (e) {
+        if (!/does not exist/.test(e.toString())) throw e;
+    }
+    return false;
+};
+const getContractSigner = async ({ keyPair  })=>{
+    const signer = await InMemorySigner.fromKeyPair(networkId, contractName, keyPair);
+    const near1 = await _nearApiJs.connect({
+        networkId,
+        nodeUrl,
+        walletUrl,
+        deps: {
+            keyStore: signer.keyStore
+        }
+    });
+    const account = new _nearApiJs.Account(near1.connection, contractName);
+    const contract = await new _nearApiJs.Contract(account, contractName, {
+        changeMethods: [
+            'send',
+            'claim',
+            'create_account_and_claim'
+        ],
+        sender: account
+    });
+    return {
+        contract
+    };
+};
